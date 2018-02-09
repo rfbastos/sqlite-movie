@@ -10,16 +10,20 @@ import { NavController, AlertController, ItemSliding, AlertOptions, LoadingContr
 })
 export class HomePage {
 
-  movies: Movie[] = [
-    new Movie('aaaa'),
-    new Movie('bbb')
-  ];
+  movies: Movie[] = [];
   constructor(
     public alertCtrl: AlertController,
     public loadingCtrl: LoadingController,
     public movieProvider: MovieProvider,
     public navCtrl: NavController
   ) {}
+
+  ionViewDidLoad() {
+    this.movieProvider.getAll()
+      .then((movies: Movie[]) => {
+        this.movies = movies;
+      })
+  }
 
   onSave(type: string, item?: ItemSliding, movie?: Movie): void {
     console.log('Clicou no add');
@@ -53,8 +57,14 @@ export class HomePage {
         {
           text: 'Sim',
           handler: () => {
-            let loading: Loading = this.showLoading(`Deletando o filme ${'movie.title '}`);
-            this.movieProvider.delete(movie.id);
+            let loading: Loading = this.showLoading(`Deletando o filme '${movie.title}'`);
+            this.movieProvider.delete(movie.id)
+            .then((deleted: boolean) => {
+              if(deleted){
+                this.movies.slice(this.movies.indexOf(movie),1);
+              }
+              loading.dismiss();
+            }).catch((error: Error) => this.mostrarAleta(`Erro ao deletar o filme '${movie.title}'`));
           }
         },
         'Cancelar'
@@ -62,6 +72,13 @@ export class HomePage {
     }).present();
   }
 
+  private mostrarAleta(mensagem: string) {
+    let alertOpt: AlertOptions = {
+      title: 'ATENÇÃO',
+      message: mensagem
+    }
+    this.alertCtrl.create(alertOpt);
+  }
   private showAlert(options: {itemSliding?: ItemSliding, title: string, type: string, movie?: Movie }): void {
 
     let alertOptions: AlertOptions = {
